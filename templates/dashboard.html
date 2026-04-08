@@ -8,7 +8,6 @@
             font-family: Arial;
             background: #f2f2f2;
         }
-
         .card {
             display: inline-block;
             background: white;
@@ -18,35 +17,67 @@
             width: 200px;
             box-shadow: 0 0 10px gray;
         }
-
         .value {
             font-size: 30px;
             color: blue;
         }
+        .live-badge {
+            background: #28a745;
+            color: white;
+            border-radius: 20px;
+            padding: 5px 15px;
+            display: inline-block;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
-
 <body>
 
 <h1>Monitoring IoT</h1>
+<div class="live-badge">🟢 LIVE</div>
 
-{% if mesure %}
-
-<div class="card">
-    <h2>Température</h2>
-    <div class="value">{{ mesure.temperature }} °C</div>
+<div id="conteneurCartes">
+    <div style="margin: 20px;">Chargement...</div>
 </div>
 
-<div class="card">
-    <h2>Humidité</h2>
-    <div class="value">{{ mesure.humidite }} %</div>
-</div>
+<p id="timestampMessage"></p>
 
-<p>Dernière mesure : {{ mesure.date }}</p>
+<script>
+    function rafraichir() {
+        fetch('/api/dernieres-mesures/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.temperature !== undefined) {
+                    const container = document.getElementById('conteneurCartes');
+                    container.innerHTML = `
+                        <div class="card">
+                            <h2>🌡️ Température</h2>
+                            <div class="value">${data.temperature} °C</div>
+                        </div>
+                        <div class="card">
+                            <h2>💧 Humidité</h2>
+                            <div class="value">${data.humidite} %</div>
+                        </div>
+                    `;
+                    const dateLocale = new Date(data.date).toLocaleString();
+                    document.getElementById('timestampMessage').innerHTML = `Dernière mesure : ${dateLocale}`;
+                } else {
+                    document.getElementById('conteneurCartes').innerHTML = `<p>Aucune donnée disponible</p>`;
+                    document.getElementById('timestampMessage').innerHTML = '';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur :', error);
+                document.getElementById('conteneurCartes').innerHTML = `<p>Erreur de connexion au serveur</p>`;
+            });
+    }
 
-{% else %}
-<p>Aucune donnée disponible</p>
-{% endif %}
+    // Actualiser toutes les 5 secondes
+    setInterval(rafraichir, 5000);
+    // Premier appel
+    rafraichir();
+</script>
 
 </body>
 </html>
